@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Match Schedule</title>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta http-equiv="pragma" content="no-cache"> 
+    <meta http-equiv="cache-control" content="no-cache"> 
+    <meta http-equiv="expires" content="0">
+
+    <style>
+        #divMain { width: 800px; margin: auto; border: 0px solid gray; }
+        h1 { text-align: center; }
+        .tip { font-size: .5em; font-weight: normal; }
+        textarea { width: 780px; margin: 10px; }
+        button { margin: 0 10px; padding: 10px 20px; }
+        #spanField { color: blue; font-size: .8em; }
+
+        #tableSchedule {
+            border-collapse: collapse;
+            width: 780px; 
+            margin: 10px;
+        }
+        #tableSchedule td, th {
+            border: 1px solid #b6b6b6;
+            text-align: center;
+            color: blue;
+        }
+        #tableSchedule .trBye td { color: gray; }
+        #tableSchedule .tdRound { font-family: Impact; font-size: 1.2em; color: gray; }
+        #tableSchedule .tdOrder { color: gray; width: 60px; }
+        #tableSchedule .tdScore { width: 150px; }
+        #tableSchedule #trHead td { background-color: gray; color: white; padding: 8px; }
+    </style>
+</head>
+
+<body>
+    <div id="divMain">
+        <h1>Match Schedule<span class="tip">(for round robin)</span></h1>
+        <textarea id="txtPairs" rows="3" cols="100" placeholder="小张1+小张2, 小王1+小王2, AA1+AA2, BB1+BB2, CC1+CC2, DD1+DD2"></textarea> <br/>
+        <button id="btnSchedule">Schedule</button> <span id="spanField"></span> <br/>
+        <div id="divSchedule"></div>        
+    </div>
+</body>
+
+<script type="text/javascript">
+    ~function init() {
+        $("btnSchedule").onclick = function() {
+            var pairs = getPairs();
+            if (pairs.length < 3) {
+                alert("The minimum number of pairs is 3");
+                return;
+            }
+            var scheduleTable = schedule(pairs);
+            printScheduleAsTable(scheduleTable);
+        };
+    }();
+
+    function getPairs() {
+        var strPairs = $("txtPairs").value.replace(/(^\s*)|(\s*$)|(\,*$)|(，*$)|(、*$)/g, "");
+        var pairs = strPairs.split(/,|，|、/g);
+        var count = pairs.length;
+        getRecommendCourtCount(count * 2);
+
+        for (var i = 0; i < count; i++) {
+            pairs[i] = pairs[i].replace(/(^\s*)|(\s*$)/g, "");
+        }
+        if (count %2 == 1) {
+            pairs[i] = "0";
+        }
+
+        return pairs;
+    }
+
+    function getRecommendCourtCount(totalPersons) {
+        var courtNum = parseInt(totalPersons / 6);
+        var recommendCourtNum = (courtNum * 8 < totalPersons) ? courtNum + 1 : courtNum;
+        $("spanField").innerHTML = "推荐场地数目: " + recommendCourtNum;
+    }
+
+    function printScheduleAsTable(matchSchedule) {
+        var str = "<table id='tableSchedule'>";
+        str += "<tr id='trHead'><td>场次</td> <td>队伍1</td> <td>队伍2</td> <td>比分</td>";
+        var orderNum = 1;
+        for (var i = 0; i < matchSchedule.length; i++) {
+            str += "<tr><td class='tdRound' colspan='4'>Round " + matchSchedule[i].round + "</td></tr>";
+            var matchs = matchSchedule[i].match;
+            for (var j = 0; j < matchs.length; j++) {
+                var trClass = "trOK", orderNumValue;
+                if (matchs[j].A == "0" || matchs[j].B == "0") {
+                    trClass = "trBye";
+                    orderNumValue = "&nbsp;";
+                }
+                else {
+                    orderNumValue = orderNum++;
+                }
+                var pair1 = matchs[j].A == "0" ? "Bye" : matchs[j].A;
+                var pair2 = matchs[j].B == "0" ? "Bye": matchs[j].B;
+                str += "<tr class='" + trClass + "'><td class='tdOrder'>" + orderNumValue + "</td><td>" + pair1 + "</td><td>" + pair2 + "</td><td class='tdScore'></td></tr>";
+            }
+        }
+        str += "</table>";
+
+        $("divSchedule").innerHTML = str;
+    }
+
+    /*
+      @param pairs: e.g. [XX, YY, MM, NN]
+      @return Scheduled match table, e.g.
+      [ { Round: 1, match [{ A: XX, B: NN}, { A: YY, B: MM}] },
+        { Round: 2, match [{ A: XX, B: YY}, { A: MM, B: NN}] },
+        { Round: 3, match [{ A: XX, B: MM}, { A: YY, B: NN}] },
+      ]
+    */
+    function schedule(pairs) {
+        var schedule = [];
+        var count = pairs.length, mid = count / 2;
+        for (var i = 0; i < count - 1; i++) {
+            var round = { round: (i + 1), match: [] };            
+            for (var j = 0; j < mid; j++) {
+                round.match[j] = {};
+                round.match[j].A = pairs[j];
+                round.match[j].B = pairs[count-1-j];
+            }
+            schedule[i] = round;
+            pairs.splice(1, 0, pairs.splice(count-1, 1));            
+       }
+       return schedule;
+    }
+
+    function $(elementId) {
+        return document.getElementById(elementId);
+    }
+</script>
+
+</html>
